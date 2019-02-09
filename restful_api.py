@@ -28,6 +28,12 @@ class Item(Resource):
         items.append(item)
         return item, 201
 
+    def delete(self, name):
+        # python will think you're using a local var unless specified as such
+        global items
+        items = list(filter(lambda x: x["name"] != name, items))
+        return {"message": "{} was deleted".format(name)}
+
 
 class Items(Resource):
     def get(self):
