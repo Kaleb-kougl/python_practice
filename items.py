@@ -28,6 +28,7 @@ class Item(Resource):
         connection.close()
         return row
 
+    @jwt_required()
     def post(self, name):
         row = self.find_by_name(name)
         if row:
@@ -62,17 +63,24 @@ class Item(Resource):
 
         return {"Message": "{} was deleted from the db".format(name)}, 200
 
-    """
+    @jwt_required()
     def put(self, name):
+        row = self.find_by_name(name)
         data = Item.parser.parse_args()
-        item = next(filter(lambda x: x["name"] == name, items), None)
-        if item is None:
-            item = {"name": name, "price": data["price"]}
-            items.append(item)
+
+        connection = sqlite3.connect("data.db")
+        cursor = connection.cursor()
+
+        query = ""
+        if row is None:
+            query = "INSERT INTO items VALUES (?, ?)"
         else:
-            item.update(data)
-        return item
-    """
+            query = "UPDATE items SET price=? WHERE name=?"
+
+        cursor.execute(query, (name, data["price"]))
+        connection.commit()
+        connection.close()
+        return {"name": name, "price": data["price"]}, 201
 
 
 class Items(Resource):
