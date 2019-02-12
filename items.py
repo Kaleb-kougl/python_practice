@@ -10,13 +10,6 @@ class Item(Resource):
         "price", type=float, required=True, help="This field cannot be left blank!"
     )
 
-    @jwt_required()
-    def get(self, name):
-        row = self.find_by_name(name)
-        if row:
-            return {"item": {"name": row[0], "price": row[1]}}, 200
-        return {"message": "Item not found"}, 404
-
     @classmethod
     def find_by_name(cls, name):
         connection = sqlite3.connect("data.db")
@@ -39,21 +32,23 @@ class Item(Resource):
         connection.close()
 
     @jwt_required()
+    def get(self, name):
+        row = self.find_by_name(name)
+        if row:
+            return {"item": {"name": row[0], "price": row[1]}}, 200
+        return {"message": "Item not found"}, 404
+
+    @jwt_required()
     def post(self, name):
         row = self.find_by_name(name)
         if row:
             return {"Message": "An item with name {} already exists".format(name)}, 400
         # if no errors then load the data
         data = Item.parser.parse_args()
-        Item.insert_item(name, data["price"])
-
-        # connection = sqlite3.connect("data.db")
-        # cursor = connection.cursor()
-        # query = "INSERT INTO items VALUES (?, ?)"
-        # cursor.execute(query, (name, data["price"]))
-
-        # connection.commit()
-        # connection.close()
+        try:
+            Item.insert_item(name, data["price"])
+        except:
+            return {"message": "something went wrong inserting the item"}, 500
 
         return {"name": name, "price": data["price"]}, 201
 
@@ -83,7 +78,10 @@ class Item(Resource):
 
         query = ""
         if row is None:
-            Item.insert_item(name, data["price"])
+            try:
+                Item.insert_item(name, data["price"])
+            except:
+                return {"message": "Something went wrong inserting the item"}, 500
         else:
             query = "UPDATE items SET price=? WHERE name=?"
 
