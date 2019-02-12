@@ -72,23 +72,26 @@ class Item(Resource):
     def put(self, name):
         row = self.find_by_name(name)
         data = Item.parser.parse_args()
-
-        connection = sqlite3.connect("data.db")
-        cursor = connection.cursor()
-
-        query = ""
         if row is None:
             try:
                 Item.insert_item(name, data["price"])
             except:
                 return {"message": "Something went wrong inserting the item"}, 500
         else:
-            query = "UPDATE items SET price=? WHERE name=?"
+            try:
+                self.update_item(data["price"], name)
+            except:
+                return {"message": "Something wen wrong trying to update the item"}, 500
+        return {"name": name, "price": data["price"]}, 201
 
-        cursor.execute(query, (data["price"], name))
+    @classmethod
+    def update_item(cls, price, name):
+        connection = sqlite3.connect("data.db")
+        cursor = connection.cursor()
+        query = "UPDATE items SET price=? WHERE name=?"
+        cursor.execute(query, (price, name))
         connection.commit()
         connection.close()
-        return {"name": name, "price": data["price"]}, 201
 
 
 class Items(Resource):
