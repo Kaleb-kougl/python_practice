@@ -28,6 +28,16 @@ class Item(Resource):
         connection.close()
         return row
 
+    @classmethod
+    def insert_item(cls, name, price):
+        connection = sqlite3.connect("data.db")
+        cursor = connection.cursor()
+        query = "INSERT INTO items VALUES (?, ?)"
+        cursor.execute(query, (name, price))
+
+        connection.commit()
+        connection.close()
+
     @jwt_required()
     def post(self, name):
         row = self.find_by_name(name)
@@ -35,15 +45,15 @@ class Item(Resource):
             return {"Message": "An item with name {} already exists".format(name)}, 400
         # if no errors then load the data
         data = Item.parser.parse_args()
-        print(data["price"])
+        Item.insert_item(name, data["price"])
 
-        connection = sqlite3.connect("data.db")
-        cursor = connection.cursor()
-        query = "INSERT INTO items VALUES (?, ?)"
-        cursor.execute(query, (name, data["price"]))
+        # connection = sqlite3.connect("data.db")
+        # cursor = connection.cursor()
+        # query = "INSERT INTO items VALUES (?, ?)"
+        # cursor.execute(query, (name, data["price"]))
 
-        connection.commit()
-        connection.close()
+        # connection.commit()
+        # connection.close()
 
         return {"name": name, "price": data["price"]}, 201
 
@@ -73,11 +83,11 @@ class Item(Resource):
 
         query = ""
         if row is None:
-            query = "INSERT INTO items VALUES (?, ?)"
+            Item.insert_item(name, data["price"])
         else:
             query = "UPDATE items SET price=? WHERE name=?"
 
-        cursor.execute(query, (name, data["price"]))
+        cursor.execute(query, (data["price"], name))
         connection.commit()
         connection.close()
         return {"name": name, "price": data["price"]}, 201
